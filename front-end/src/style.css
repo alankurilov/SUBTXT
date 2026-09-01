@@ -1,0 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Funnel+Display:wght@600;700&family=Funnel+Sans:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Funnel Display", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Funnel Sans", ui-sans-serif, system-ui, sans-serif;
+  --color-ink: #0d0f12;
+  --color-panel: #15181d;
+  --color-line: #262b33;
+  --color-muted: #9aa3ad;
+  --color-faint: #6b7480;
+  --color-brand: #4a8fe7;
+}
+
+@layer base {
+  html { @apply bg-ink; }
+  body { @apply m-0 bg-ink font-sans text-slate-100 antialiased; }
+  button, input { font: inherit; }
+  button { @apply cursor-pointer; }
+  button:focus-visible { @apply outline-2 outline-offset-2 outline-brand; }
+}
