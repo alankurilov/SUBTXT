@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue'
+import subtxtLogo from '../../Subtxt_Logo.svg'
 
 const screen = ref('landing')
 const file = ref(null)
@@ -42,7 +43,7 @@ function fmtSize(bytes) { return `${(bytes / 1_000_000).toFixed(0)} MB` }
   <main class="min-h-screen bg-ink text-slate-100">
     <header v-if="screen === 'landing'" class="sticky top-0 z-20 border-b border-line/90 bg-ink/90 backdrop-blur">
       <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        <button class="flex items-center gap-2 font-display text-lg font-bold tracking-[.22em]" aria-label="SUBTXT home" @click="go('landing')"><span class="grid size-6 place-items-center rounded-full bg-[#1b455f] text-xs tracking-normal text-[#7aceff]">✦</span>SUBTXT</button>
+        <button class="flex items-center" aria-label="SUBTXT home" @click="go('landing')"><img :src="subtxtLogo" alt="SUBTXT" class="h-6 w-auto" /></button>
         <div class="flex gap-3"><button class="rounded-md border border-line px-4 py-2 text-sm text-muted">Pricing</button><button class="rounded-lg bg-brand px-4 py-2 text-sm font-semibold" @click="go('upload')">Get started</button></div>
       </div>
     </header>
