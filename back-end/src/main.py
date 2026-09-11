@@ -13,9 +13,37 @@ app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173", "http
 
 ALLOWED_VIDEO_TYPES = {"video/mp4", "video/quicktime", "video/webm", "video/x-msvideo"}
 MAX_UPLOAD_BYTES = 500 * 1024 * 1024
-ANALYSIS_PROMPT = """Analyze this video and identify parts that may be difficult, unclear, unfamiliar, or require additional context for a viewer.
+ANALYSIS_PROMPT = """
+Identify moments in the video where a short contextual caption could help viewers follow the conversation.
 
-For each relevant part, provide a short descriptive title, start and end timestamps in seconds, and a clear explanation of what the viewer may not understand. Do not explain every part of the video: only include moments where context meaningfully helps the viewer understand what is happening. Return the result as a list of captions."""
+A moment is a specific reference or concept — such as a person, event, institution, policy, acronym, phrase or cultural reference — that appears in the conversation.
+
+Flag all the moments in the video when both are true
+
+Understanding depends on it — the viewer needs that context to follow the speaker’s point.
+It isn’t already explained — the video does not sufficiently explain it nearby.
+Surface all moments that meet both criteria.
+
+Keep separate mentions as separate moments.
+Do not omit qualifying moments.
+Do not add references or concepts that do not appear in the script.
+Recommend a shortlist
+
+From the full list, recommend the moments that are:
+
+most important to understanding the speaker’s point
+most valuable to explain for the target audience
+Recommend roughly the top 30–40%, with a minimum of 4 and maximum of 10 where possible. If fewer than 4 moments qualify, recommend only those that do.
+
+For each moment, return:
+
+Spoken phrase — the exact words used in the video (e.g. “Bernie”, “AFL”)
+Reference title — the full, recognisable name of the reference (e.g. “Bernie Sanders”, “American Football League”). 35 characters max; prioritise brevity.
+Explanatory caption — the minimum context needed to understand the reference in this conversation. 130 characters max; prioritise brevity.
+Recommended — Yes / No
+Return moments in the order they appear in the script.
+
+"""
 @app.get("/")
 async def root():
     return {"message": "Service for analysing video"}
