@@ -8,6 +8,7 @@ const isProcessing = ref(false)
 const recommendedOnly = ref(true)
 const activeMoment = ref(null)
 const exportOpen = ref(false)
+const errorMessage = ref('')
 
 const moments = ref([
   { id: 1, term: 'AOC', time: '1:35', type: 'People', quote: 'AOC made the case for a more direct response.', detail: 'Alexandria Ocasio-Cortez is a U.S. representative known for progressive policy advocacy.', selected: true, approved: null, gradient: 'from-[#617389] via-[#29303a] to-[#141619]' },
@@ -24,11 +25,38 @@ const pendingEdits = computed(() => selectedMoments.value.filter(m => m.approved
 
 function go(next) { screen.value = next }
 function selectFile(event) {
-  file.value = event.target.files?.[0] || { name: 'podcast-episode.mp4', size: 264000000 }
+  const selectedFile = event.target.files?.[0]
+  if (!selectedFile) return
+  file.value = selectedFile
+  errorMessage.value = ''
 }
-function beginAnalysis() {
+function secondsToTime(seconds) {
+  const value = Math.max(0, Math.floor(Number(seconds) || 0))
+  return `${Math.floor(value / 60)}:${String(value % 60).padStart(2, '0')}`
+}
+function captionsToMoments(captions) {
+  const gradients = ['from-[#617389] via-[#29303a] to-[#141619]', 'from-[#805e54] via-[#332a2c] to-[#161719]', 'from-[#345c68] via-[#243239] to-[#111417]', 'from-[#6d5c45] via-[#312d28] to-[#141517]']
+  return captions.map((caption, index) => ({ id: index + 1, term: caption.title, time: secondsToTime(caption.start), type: 'Context', quote: '', detail: caption.explanation, selected: index < 3, approved: null, gradient: gradients[index % gradients.length] }))
+}
+async function beginAnalysis() {
+  if (!file.value || isProcessing.value) return
+  errorMessage.value = ''
   isProcessing.value = true
-  window.setTimeout(() => { isProcessing.value = false; go('curate') }, 1800)
+  go('processing')
+  try {
+    const formData = new FormData()
+    formData.append('video', file.value)
+    const response = await fetch(import.meta.env.VITE_API_URL || 'http://localhost:8000/analyse-video', { method: 'POST', body: formData })
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok) throw new Error(data.detail || 'We could not analyse this video. Please try again.')
+    moments.value = captionsToMoments(data.captions || [])
+    go('curate')
+  } catch (error) {
+    errorMessage.value = error.message || 'We could not analyse this video. Please try again.'
+    go('upload')
+  } finally {
+    isProcessing.value = false
+  }
 }
 function startCaptions() {
   isProcessing.value = true
@@ -56,7 +84,8 @@ function fmtSize(bytes) { return `${(bytes / 1_000_000).toFixed(0)} MB` }
     <section v-else-if="screen === 'upload'" class="mx-auto max-w-[1440px] px-6 py-8 sm:px-12">
       <div class="flex items-center justify-between"><ProgressSteps class="mb-0 flex-1" :step="1" /><button class="ml-6 shrink-0 text-sm text-muted hover:text-white" @click="go('landing')">← Back to home</button></div>
       <div class="mx-auto mt-28 max-w-3xl"><h2 class="font-display text-4xl font-bold tracking-tight">Upload your conversation</h2><p class="mt-4 text-xl text-muted">Long-form video works best — podcasts, interviews, panels.</p>
-      <label class="mt-10 flex h-62 min-h-60 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-[#39414d] p-8 text-center transition hover:border-brand hover:bg-brand/5"><span class="grid size-10 place-items-center rounded-full bg-faint/20 text-2xl text-muted">↑</span><span class="mt-5 text-lg font-semibold">Choose a video file</span><span class="mt-2 text-sm text-faint">or drag it here · MP4, MOV, or a YouTube link</span><input class="hidden" type="file" accept="video/*" @change="selectFile" /></label>
+      <label class="mt-10 flex h-62 min-h-60 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-[#39414d] p-8 text-center transition hover:border-brand hover:bg-brand/5"><span class="grid size-10 place-items-center rounded-full bg-faint/20 text-2xl text-muted">↑</span><span class="mt-5 text-lg font-semibold">Choose a video file</span><span class="mt-2 text-sm text-faint">MP4, MOV, WebM, or AVI · up to 500 MB</span><input class="hidden" type="file" accept="video/mp4,video/quicktime,video/webm,video/x-msvideo" @change="selectFile" /></label>
+      <p v-if="errorMessage" class="mt-4 rounded-lg border border-red-400/40 bg-red-400/10 px-4 py-3 text-sm text-red-200">{{ errorMessage }}</p>
       <div v-if="file" class="mt-6 flex items-center gap-4 rounded-xl border border-line border-l-4 border-l-brand bg-panel p-4"><div class="grid size-14 place-items-center rounded-lg bg-slate-800 text-xl">▶</div><div class="min-w-0 flex-1"><p class="truncate font-medium">{{ file.name }}</p><p class="text-sm text-faint">{{ fmtSize(file.size) }} · Ready to analyse</p></div><button class="text-sm text-muted" @click="file = null">Remove</button></div>
       <div class="mt-7 flex justify-end"><button class="rounded-lg bg-brand px-7 py-3 font-display font-semibold disabled:cursor-not-allowed disabled:opacity-40" :disabled="!file" @click="beginAnalysis">Analyse video</button></div></div>
     </section>

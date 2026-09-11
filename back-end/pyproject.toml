@@ -9,11 +9,15 @@ authors = [
 requires-python = ">=3.14"
 dependencies = [
     "fastapi[standard]>=0.141.1",
+    "google-genai>=1.0.0",
+    "python-dotenv>=1.0.0",
 ]
-
-[project.scripts]
-back-end = "back_end:main"
 
 [build-system]
 requires = ["uv_build>=0.12.8,<0.13.0"]
 build-backend = "uv_build"
+
+# This is an application run directly from src/main.py, not a distributable package.
+# Keeping it non-packaged prevents uv from looking for src/back_end.
+[tool.uv]
+package = false
